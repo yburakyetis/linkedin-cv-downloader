@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+
+linkedin-session.json
+logs/
