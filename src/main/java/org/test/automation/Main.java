@@ -7,13 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.test.automation.browser.BrowserManager;
 import org.test.automation.config.LinkedInAutomationConfig;
-import org.test.automation.linkedin.ApplicantProcessor;
-import org.test.automation.linkedin.PaginationController;
+import org.test.automation.linkedin.service.LinkedInCvAutomationService;
+
+import static org.test.automation.config.LinkedInAutomationConfig.LOGIN_WAIT_SECONDS;
 
 public class Main {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(Main.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
   public static void main(String[] args) {
 
@@ -21,33 +21,24 @@ public class Main {
 
     try (Playwright playwright = Playwright.create()) {
 
-      BrowserContext context =
-          BrowserManager.createContext(playwright);
+      BrowserContext context = BrowserManager.createContext(playwright);
 
       Page page = context.newPage();
 
+      LOGGER.info("Login required, waiting for manual authentication");
+      page.navigate("https://www.linkedin.com/login");
+      page.waitForTimeout(LOGIN_WAIT_SECONDS);
+
+      BrowserManager.persistSession(context);
+      LOGGER.info("Session state saved successfully");
+
       page.navigate(LinkedInAutomationConfig.APPLICANTS_URL);
-      page.waitForTimeout(20000);
+      page.waitForLoadState();
 
-      if (page.url().contains("/login")) {
-        LOGGER.info("Login required, waiting for manual authentication");
-        page.waitForTimeout(20000);
-        BrowserManager.persistSession(context);
-        LOGGER.info("Session state saved successfully");
-      }
+      new LinkedInCvAutomationService(page).run();
 
-      ApplicantProcessor processor =
-          new ApplicantProcessor(page);
-
-      PaginationController pagination =
-          new PaginationController(page);
-
-      do {
-        processor.processCurrentPage();
-      } while (pagination.goNextPage());
       LOGGER.info("All processing completed successfully");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       LOGGER.error("An unexpected error occurred", e);
     }
   }

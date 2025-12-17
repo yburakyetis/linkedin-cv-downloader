@@ -11,16 +11,13 @@ import org.test.automation.config.LinkedInAutomationConfig;
 public class BrowserManager {
 
   public static BrowserContext createContext(Playwright playwright) {
-    Browser browser =
-        playwright.chromium().launch(
-            new BrowserType.LaunchOptions()
-                .setHeadless(false)
-                .setSlowMo(80));
+    Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                                                       .setHeadless(false)
+                                                       .setSlowMo(80));
 
-    Browser.NewContextOptions contextOptions =
-        new Browser.NewContextOptions()
-            .setViewportSize(1280, 800)
-            .setAcceptDownloads(true);
+    Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
+        .setViewportSize(1280, 800)
+        .setAcceptDownloads(true);
 
     Path sessionPath = Paths.get(LinkedInAutomationConfig.STORAGE_STATE_PATH);
     if (sessionPath.toFile().exists()) {

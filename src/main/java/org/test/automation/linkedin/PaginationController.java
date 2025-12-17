@@ -6,13 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.test.automation.browser.InteractionPacing;
 
-import static org.test.automation.config.LinkedInAutomationConfig.APPLICATION_LIST;
-import static org.test.automation.config.LinkedInAutomationConfig.GO_NEXT_BUTTON;
+import static org.test.automation.config.LinkedInAutomationConfig.NEXT_PAGE_BUTTON;
+import static org.test.automation.config.LinkedInAutomationConfig.PAGE_SWITCH_WAIT_SECONDS;
 
 public class PaginationController {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(PaginationController.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PaginationController.class);
 
   private final Page page;
 
@@ -20,21 +19,14 @@ public class PaginationController {
     this.page = page;
   }
 
-  public boolean goNextPage() {
+  public boolean isNextPageAvailable() {
+    Locator nextBtn = page.locator(NEXT_PAGE_BUTTON);
+    return nextBtn.count() > 0 && nextBtn.first().isEnabled();
+  }
 
-    Locator nextBtn = page.locator(GO_NEXT_BUTTON);
-
-    if (nextBtn.count() > 0 && nextBtn.first().isEnabled()) {
-      LOGGER.info("Moving to the next applicants page");
-      nextBtn.first().click();
-
-      page.locator(APPLICATION_LIST)
-          .first()
-          .waitFor(new Locator.WaitForOptions().setTimeout(15000));
-      InteractionPacing.randomWait(10, 30);
-      return true;
-    }
-    LOGGER.info("Reached the last page of applicants");
-    return false;
+  public void switchToNextPage() {
+    LOGGER.info("Moving to the next applicants page");
+    page.locator(NEXT_PAGE_BUTTON).first().click();
+    InteractionPacing.randomWait(PAGE_SWITCH_WAIT_SECONDS, PAGE_SWITCH_WAIT_SECONDS + 5);
   }
 }
