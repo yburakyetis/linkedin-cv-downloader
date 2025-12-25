@@ -6,6 +6,7 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Playwright;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import org.test.automation.config.LinkedInAutomationConfig;
 
 public class BrowserManager {
@@ -13,10 +14,11 @@ public class BrowserManager {
   public static BrowserContext createContext(Playwright playwright) {
     Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                                                        .setHeadless(false)
-                                                       .setSlowMo(80));
+                                                       .setSlowMo(80)
+                                                       .setArgs(List.of("--start-maximized")));
 
     Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
-        .setViewportSize(1280, 800)
+        .setViewportSize(null)
         .setAcceptDownloads(true);
 
     Path sessionPath = Paths.get(LinkedInAutomationConfig.STORAGE_STATE_PATH);

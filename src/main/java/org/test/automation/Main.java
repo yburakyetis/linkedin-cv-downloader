@@ -3,12 +3,15 @@ package org.test.automation;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.test.automation.browser.BrowserManager;
 import org.test.automation.config.LinkedInAutomationConfig;
 import org.test.automation.linkedin.service.LinkedInCvAutomationService;
 
+import static org.test.automation.config.LinkedInAutomationConfig.DOWNLOAD_DIR;
 import static org.test.automation.config.LinkedInAutomationConfig.LOGIN_WAIT_SECONDS;
 
 public class Main {
@@ -21,8 +24,9 @@ public class Main {
 
     try (Playwright playwright = Playwright.create()) {
 
-      BrowserContext context = BrowserManager.createContext(playwright);
+      Files.createDirectories(Paths.get(DOWNLOAD_DIR));
 
+      BrowserContext context = BrowserManager.createContext(playwright);
       Page page = context.newPage();
 
       LOGGER.info("Login required, waiting for manual authentication");

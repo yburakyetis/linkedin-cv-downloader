@@ -1,7 +1,10 @@
 package org.test.automation.linkedin;
 
+import com.microsoft.playwright.Download;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,7 @@ import static org.test.automation.config.LinkedInAutomationConfig.APPLICATION_LI
 import static org.test.automation.config.LinkedInAutomationConfig.DETAILS_PANEL;
 import static org.test.automation.config.LinkedInAutomationConfig.DETAIL_PANEL_TIMEOUT_MS;
 import static org.test.automation.config.LinkedInAutomationConfig.DOWNLOAD_BUTTON;
+import static org.test.automation.config.LinkedInAutomationConfig.DOWNLOAD_DIR;
 import static org.test.automation.config.LinkedInAutomationConfig.MAX_CV_PER_RUN;
 import static org.test.automation.config.LinkedInAutomationConfig.MAX_WAIT_SECONDS;
 import static org.test.automation.config.LinkedInAutomationConfig.MIN_WAIT_SECONDS;
@@ -28,20 +32,27 @@ public class ApplicantProcessor {
   }
 
   public void processCurrentPage() {
+    Locator applicants = page.locator(APPLICATION_LIST);
+    int count = applicants.count();
 
-    var applicants = page.querySelectorAll(APPLICATION_LIST);
-    LOGGER.info("Number of applicants on current page: {}", applicants.size());
+    LOGGER.info("Number of applicants on current page: {}", count);
 
-    for (var applicant : applicants) {
+    for (int i = 0; i < count; i++) {
 
       if (downloadCount.get() >= MAX_CV_PER_RUN) {
         LOGGER.warn("Maximum CV download limit reached: {}", MAX_CV_PER_RUN);
         return;
       }
 
+      Locator applicant = applicants.nth(i);
+
+      applicant.scrollIntoViewIfNeeded();
+      InteractionPacing.microPause();
+
       applicant.click();
 
       waitForDetailsPanel();
+      scrollToDownloadSection();
       tryDownloadCv();
 
       InteractionPacing.randomWait(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS);
@@ -55,13 +66,40 @@ public class ApplicantProcessor {
   private void tryDownloadCv() {
     var downloadBtn = page.locator(DOWNLOAD_BUTTON);
 
-    if (downloadBtn.count() > 0 && downloadBtn.first().isVisible()) {
-      downloadBtn.first().click();
-      int total = downloadCount.incrementAndGet();
-      LOGGER.info("CV downloaded successfully | Total downloaded: {}", total);
-      InteractionPacing.randomWait(3, 8);
-    } else {
+    if (downloadBtn.count() == 0 || !downloadBtn.first().isVisible()) {
       LOGGER.info("No downloadable CV available for this applicant");
+      return;
+    }
+
+    try {
+      Download download = page.waitForDownload(() -> {downloadBtn.first().click();});
+
+      Path downloadPath = Paths.get(DOWNLOAD_DIR, download.suggestedFilename());
+
+      download.saveAs(downloadPath);
+
+      int total = downloadCount.incrementAndGet();
+      LOGGER.info("CV downloaded and saved: {} | Total: {}", downloadPath.getFileName(), total);
+
+      InteractionPacing.randomWait(3, 8);
+
+    } catch (Exception e) {
+      LOGGER.error("Failed to download CV", e);
+    }
+  }
+
+  private void scrollToDownloadSection() {
+
+    Locator detailsPanel = page.locator(DETAILS_PANEL);
+    Locator downloadBtn = detailsPanel.locator(DOWNLOAD_BUTTON);
+
+    detailsPanel.waitFor(
+        new Locator.WaitForOptions()
+            .setTimeout(DETAIL_PANEL_TIMEOUT_MS));
+
+    if (downloadBtn.count() > 0) {
+      downloadBtn.first().scrollIntoViewIfNeeded();
+      InteractionPacing.microPause();
     }
   }
 }
